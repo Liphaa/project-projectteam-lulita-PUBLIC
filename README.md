@@ -57,8 +57,6 @@ To check your understanding of the various concepts used in this project, you sh
    
    - Support for "held" seats (where, after a user selects their seats, they are reserved for a period of time to allow the user time to pay. If the user cancels payment, or the time period elapses, the seats are automatically released, able to be booked again by other users).
 
-**Important Note:** Recording the above information as well as your overall project development experience will help in completing the Assignment 1 tasks too. Assignment 1 will be released in the second half of the course.
-
 Resources
 ----------
 A multi-module Maven project, `project-concert`, is supplied and comprises 3 modules: 
@@ -110,17 +108,17 @@ The `persistence.xml` file includes a `javax.persistence.sql-load-script-source`
 
 Constraints
 ----------
-You are not permitted to change the `ConcertServiceIT` class. Since these integration tests rely on the DTO classes in package `proj.concert.common.dto`, and the data types in package `proj.concert.common.types`, you cannot change these entities either - except to add any required annotations.
+You are **not** permitted to change the `ConcertServiceIT` class. Since these integration tests rely on the DTO classes in package `proj.concert.common.dto`, and the data types in package `proj.concert.common.types`, you cannot change these entities either - except to add any required annotations.
 
-Your solution must load the data as described by the `db-init.sql` file (i.e. you must have the 2 users, 11 performers, 8 concerts, all 11 supplied concert-performer pairings and all 13 concert dates). Failure to do so will result in the integration tests failing, which will negatively impact your grade. As such, when defining JPA annotations, ensure that you supply all table and column names as appropriate.
+Your solution **must** load the data as described by the `db-init.sql` file (i.e. you must have the 2 users, 11 performers, 8 concerts, all 11 supplied concert-performer pairings and all 13 concert dates). Failure to do so will result in the integration tests failing, which will negatively impact your grade. As such, when defining JPA annotations, ensure that you supply all table and column names as appropriate.
 
-While your Web service doesn't need to be tested with concurrent clients, it *does* need to be implemented in such a way that it could be used by concurrent clients without comprising data integrity.
+While your Web service doesn't need to be tested with concurrent clients, it ***does*** need to be implemented in such a way that it could be used by concurrent clients without comprising data integrity.
 
-Finally, your solution must function, with the given client webapp, without modifying any source files in the `client` package (with the exception of the `Config` class if necessary).
+Finally, your solution **must** function, with the given client webapp, without modifying any source files in the `client` package (with the exception of the `Config` class if necessary).
 
-You are not allowed to add any dependencies to any of the pom files.
+You are **not** allowed to add any dependencies to any of the pom files.
 
-You are not allowed to use any external libraries or frameworks other than those made available in the resources provided.
+You are **not** allowed to use any external libraries or frameworks other than those made available in the resources provided.
 
 Hints and Suggestions
 ----------
@@ -174,7 +172,7 @@ Assessment and submission
 #### Submission
 
 The marking of this lab will mainly be based on your team repository as of
-**Monday May 6 0900hrs**. 
+**Monday May 12 0900hrs**. 
 
 The submission for this project will follow the same final step as for labs, which means you will be creating a **"submission"** branch and push your final code to that branch for submission. Note that as for labs this must be done once you are fully satisfied with your code and have successfully tested your code locally. Again, **only 3 attempts** for pushing to "submission" branch are allowed. After you have finished all exercises and pushed the code to the repository on Github, please check if the execution of `Github classroom workflow` runs successfully without any test fails.
 
@@ -198,21 +196,25 @@ This project is worth **30%** of your final grade. It is marked out of **80 mark
 - Code review: **5 marks** (code is understandable and well-commented; no obvious errors that may have been missed by the integration tests). 
 
 - Teamwork: **25 marks** Clear evidence that every member in the team has
-  contributed to the project. This will be assessed by examining the **code, commit logs, Organization.md, comments recorded in GitHub Issues and other
-information associated with your team repository**. If we do not find evidence of individual contributions to the team work, marks will be deducted for this component.
+  contributed to the project in a substantial and collaborative way. This will be assessed by examining the **code, commit logs, Organization.md, comments recorded in GitHub Issues and other
+information associated with your team repository**. If we find little to no evidence of individual contributions and team communication, marks will be deducted for this component accordingly.
 
     We expect to see non-trivial commits, with meaningful commit
     messages. Different team members will do different things and different
     times, but we will be looking for evidence that there was communication, cooperation and
     collaboration. The suggested evidence for this remains at the least same as previous labs. 
 
-    **All members of the team will get the same mark for the project, unless one or more members have clearly not contributed enough towards the project.** As mentioned earlier, it will be each team member's responsibility to convince the markers about their contributions toward the project. If you are face any team issues, talk to the members involved and/or to the lab tutors during the lab sessions. Remember there is a project help lab session throughout Week 6 too. Week01Lab Risk Assessment and Mitigation processes will help you in deciding about when to escalate your team issue to the teaching team. If you decide to escalate your team issue, you must do it well before the final project deadline (at least 6 working days). 
+    **All members of the team will get the same mark for the project, unless one or more members have clearly not contributed enough towards the project.** As mentioned earlier, it will be each team member's responsibility to convince the markers about their contributions toward the project. If you are facing any team issues, talk to the members involved and/or to the lab tutors during the lab sessions. Remember there is a project help lab session throughout Week 6 and Week 7 too. Week01Lab Risk Assessment and Mitigation processes will help you in deciding about when to escalate your team issue to the teaching team. If you decide to escalate your team issue, you must do it well before the final project deadline (at least 6 working days). 
 
     If no `Organisation.md` file is provided, or it does not contain the relevant information, then a mark of **zero** will be given for the team component.
 
-    **You must form/register a team by 21 March 17:00hrs and enter your initial team communication via GitHub Issues before Monday, 25 March 17:00hrs NZ time**. Some examples of this evidence could be: who does what,	by when you plan to finish the exercises, constraints, planning notes, etc.  If you fail to add any notes to Issues before the Initial Team Communication deadline, **10 marks** will be deducted from the Teamwork marks. Also, a penalty of **10 marks** will applicable to teams not submitting the Progress Report (via Google form -- will be supplied later) before **22 April 17:00 hrs NZ time**.
+    **You must form/register/join a Github team by 28 March 17:00hrs (same as Week04Lab).** Otherwise, **10 marks** will be deducted from the Teamwork marks.
+  
+  **Well started is half done! As a good starting point, enter your initial team discussion via GitHub Issues early on in the Project**. Some examples of this evidence could be: who does what, by when you plan to finish the exercises, constraints, planning notes, etc.
 
-    **Note that your team (one of the team members to push on behalf of the team) must NOT push to the "submission" branch on remote (GitHub repo) more than 3 times**. Executing workflows incurs cost, and you must make sure you do not violate this rule while making your submissions. **Violating this rule will bring penalties too**. To be safe, 	never push to submission branch unless you have fully tested your final code. See details in previous lab descriptions.
+  **At the start if Week 7, we will be contacting your team for a Project Progress report, to be filled only by the team leaders**. A penalty of **10 marks** will applicable to teams not submitting the Progress Report (via Google form -- will be supplied later) before **29 April 17:00 hrs NZ time**.
+
+    **Note that your team (one of the team members to push on behalf of the team) must NOT push to the "submission" branch on remote (GitHub repo) more than 3 times**. Executing workflows incurs cost, and you must make sure you do not violate this rule while making your submissions. **Violating this rule will bring penalties too**. To be safe, never push to submission branch unless you have fully tested your final code. See details in previous lab descriptions.
     
     **CAUTION: Avoid the following scenarios**
     
@@ -221,6 +223,7 @@ information associated with your team repository**. If we do not find evidence o
     - One or more members work to finish the project tasks themselves without consulting the rest. Take the team along! Maintain your communication.
     - One or more members have schedule issues and so cannot work together on the project. Plan your schedule well in advance (Week 4).
     - Others??
+    - **Regularly revisit your Week01Lab Risk Planning, Monitoring and Mitigation strategies, and work diligently to prevent risks becoming issues.**
 
 Appendix: The client webapp.
 ----------
