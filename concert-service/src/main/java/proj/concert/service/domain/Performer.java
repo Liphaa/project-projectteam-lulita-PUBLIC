@@ -9,6 +9,7 @@ import javax.persistence.*;
 
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
+import proj.concert.common.types.Genre;
 
 @Entity
 public class Performer implements Comparable<Performer> {
@@ -74,6 +75,13 @@ public class Performer implements Comparable<Performer> {
         this.concerts = concerts;
     }
 
+    public Genre getGenre() {
+        return genre;
+    }
+
+    public void setGenre(Genre genre) {
+        this.genre = genre;
+    }
 
     @Override
     public String toString() {

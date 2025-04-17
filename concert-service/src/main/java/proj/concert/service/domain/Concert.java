@@ -4,6 +4,8 @@ import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.ArrayList;
+import java.util.List;
 
 import javax.persistence.*;
 
@@ -22,27 +24,27 @@ public class Concert implements Comparable<Concert>{
 
     @ElementCollection
     @CollectionTable (
-        name = "concert_dates",
-        joinColumns = @JoinColumn(name = "concert_id"))
-    @Column(name = "date")
-    private Set<LocalDateTime> dates = new HashSet<>();
+        name = "CONCERT_DATES",
+        joinColumns = @JoinColumn(name = "CONCERT_ID"))
+    @Column(name = "DATE")
+    private List<LocalDateTime> dates;
 
     @ManyToMany(cascade = CascadeType.PERSIST)
     @JoinTable(
-        name = "concert_performer",
-        joinColumns = @JoinColumn(name = "concert_id"),
-        inverseJoinColumns = @JoinColumn(name = "performer_id"))
-    private Set<Performer> performers = new HashSet<>();
+        name = "CONCERT_PERFORMER",
+        joinColumns = @JoinColumn(name = "CONCERT_ID"),
+        inverseJoinColumns = @JoinColumn(name = "PERFORMER_ID"))
+    private List<Performer> performers;
 
 
-    public Concert(Long id, String title, Set<LocalDateTime> dates, Set<Performer> performers) {
+    public Concert(Long id, String title, List<LocalDateTime> dates, List<Performer> performers) {
         this.id = id;
         this.title = title;
         this.dates = dates;
         this.performers = performers;
     }
 
-    public Concert(String title, Set<LocalDateTime> dates, Set<Performer> performers) {
+    public Concert(String title, List<LocalDateTime> dates, List<Performer> performers) {
         this(null, title, dates, performers);
     }
 
@@ -73,19 +75,19 @@ public class Concert implements Comparable<Concert>{
 
     public void setBlurb(String blurb) { this.blurb = blurb;}
 
-    public Set<LocalDateTime> getDates() {
+    public List<LocalDateTime> getDates() {
         return dates;
     }
 
-    public void setDates(Set<LocalDateTime> dates) {
+    public void setDates(List<LocalDateTime> dates) {
         this.dates = dates;
     }
 
-    public Set<Performer> getPerformers() {
+    public List<Performer> getPerformers() {
         return performers;
     }
 
-    public void setPerformers(Set<Performer> performers) {
+    public void setPerformers(List<Performer> performers) {
         this.performers = performers;
     }
 

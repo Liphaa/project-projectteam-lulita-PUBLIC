@@ -2,13 +2,17 @@ package proj.concert.service.domain;
 
 import java.time.LocalDateTime;
 import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.List;
+
 
 import javax.persistence.*;
 
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
+import proj.concert.common.jackson.LocalDateTimeDeserializer;
+import proj.concert.common.jackson.LocalDateTimeSerializer;
 
 @Entity
 public class Booking {
@@ -27,9 +31,9 @@ public class Booking {
     private LocalDateTime date;
 
     @OneToMany(mappedBy = "booking", cascade = CascadeType.PERSIST)
-    private Set<Seat> reservedSeats = new HashSet<>();
+    private List<Seat> reservedSeats;
 
-    public Booking(User user, Set<Seat> reservedSeats) {
+    public Booking(User user, List<Seat> reservedSeats) {
         this.user = user;
         this.reservedSeats = reservedSeats;
     }
@@ -66,11 +70,11 @@ public class Booking {
         this.date = date;
     }
 
-    public Set<Seat> getReservedSeats() {
+    public List<Seat> getReservedSeats() {
         return reservedSeats;
     }
 
-    public void setReservedSeats(Set<Seat> reservedSeats) {
+    public void setReservedSeats(List<Seat> reservedSeats) {
         this.reservedSeats = reservedSeats;
     }
 }
