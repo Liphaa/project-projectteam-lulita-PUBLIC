@@ -25,7 +25,7 @@ public class User implements Comparable<User> {
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
     private Set<Booking> bookings = new HashSet<>();
 
-    @Embedded
+    @Transient
     private BookingRequest bookingRequest;
 
     public User(Long id, String username, String password) {
@@ -53,7 +53,9 @@ public class User implements Comparable<User> {
     public void setPassword(String password) {
         this.password = password;
     }
-    @Override
+    public Set<Booking> getBookings() { return bookings; };
+    public void setBookings(Set<Booking> bookings) { this.bookings = bookings; };
+
     @Override
     public String toString() {
         StringBuilder buffer = new StringBuilder();
