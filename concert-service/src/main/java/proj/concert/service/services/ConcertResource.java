@@ -3,13 +3,22 @@ package proj.concert.service.services;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.ws.rs.Consumes;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
+import javax.persistence.NoResultException;
+import javax.persistence.TypedQuery;
+import javax.ws.rs.*;
+import javax.ws.rs.core.*;
+import javax.persistence.EntityManager;
+
+
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import org.apache.commons.lang3.NotImplementedException;
+import proj.concert.service.domain.*;
+import proj.concert.common.dto.*;
+
+
+
+import java.util.UUID;
 
 @Path("/concert-service")
 @Consumes({MediaType.APPLICATION_JSON})
@@ -72,6 +81,33 @@ public class ConcertResource {
     @Path("")
     public Response getAllSeats(){
         throw new NotImplementedException("getAllSeats");
+    }
+
+    @POST
+    @Path("/login")
+    public Response login(UserDTO creds) {
+
+        EntityManager em = PersistenceManager.instance().createEntityManager();
+
+        try {
+            TypedQuery<User> query = em.createQuery(
+                    "SELECT u FROM User u WHERE u.username = :username AND u.password = :password", User.class)
+                    .setParameter("username", creds.getUsername()).setParameter("password", creds.getPassword());
+
+            User user;
+            try {
+                user = query.getSingleResult();
+            } catch (NoResultException e) {
+                return Response.status(Response.Status.UNAUTHORIZED).build();
+            }
+
+            NewCookie cookie = new NewCookie("auth", UUID.randomUUID().toString());
+            return Response.ok().cookie(cookie).build();
+
+        } finally {
+            em.close();
+        }
+
     }
 
 
