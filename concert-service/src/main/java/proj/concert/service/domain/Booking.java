@@ -24,6 +24,8 @@ public class Booking {
     @ManyToOne(optional = false)
     @JoinColumn(name = "user_id")
     private User user;
+
+    @ManyToOne(optional = false)
     private Concert concert;
 
     @JsonSerialize(using = LocalDateTimeSerializer.class)

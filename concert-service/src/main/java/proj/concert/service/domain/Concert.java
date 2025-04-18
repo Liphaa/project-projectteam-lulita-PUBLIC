@@ -22,29 +22,30 @@ public class Concert implements Comparable<Concert>{
     private String imageName;
     private String blurb;
 
-    @ElementCollection
-    @CollectionTable (
-        name = "CONCERT_DATES",
-        joinColumns = @JoinColumn(name = "CONCERT_ID"))
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(
+            name = "CONCERT_DATES",
+            joinColumns = @JoinColumn(name = "CONCERT_ID"))
     @Column(name = "DATE")
-    private List<LocalDateTime> dates;
+    private Set<LocalDateTime> dates = new HashSet<>();
 
     @ManyToMany(cascade = CascadeType.PERSIST)
     @JoinTable(
-        name = "CONCERT_PERFORMER",
-        joinColumns = @JoinColumn(name = "CONCERT_ID"),
-        inverseJoinColumns = @JoinColumn(name = "PERFORMER_ID"))
+            name = "CONCERT_PERFORMER",
+            joinColumns = @JoinColumn(name = "CONCERT_ID"),
+            inverseJoinColumns = @JoinColumn(name = "PERFORMER_ID"))
     private List<Performer> performers;
 
 
-    public Concert(Long id, String title, List<LocalDateTime> dates, List<Performer> performers) {
+
+    public Concert(Long id, String title, Set<LocalDateTime> dates, List<Performer> performers) {
         this.id = id;
         this.title = title;
         this.dates = dates;
         this.performers = performers;
     }
 
-    public Concert(String title, List<LocalDateTime> dates, List<Performer> performers) {
+    public Concert(String title, Set<LocalDateTime> dates, List<Performer> performers) {
         this(null, title, dates, performers);
     }
 
@@ -75,11 +76,11 @@ public class Concert implements Comparable<Concert>{
 
     public void setBlurb(String blurb) { this.blurb = blurb;}
 
-    public List<LocalDateTime> getDates() {
+    public Set<LocalDateTime> getDates() {
         return dates;
     }
 
-    public void setDates(List<LocalDateTime> dates) {
+    public void setDates(Set<LocalDateTime> dates) {
         this.dates = dates;
     }
 

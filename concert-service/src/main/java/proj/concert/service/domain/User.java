@@ -53,7 +53,7 @@ public class User implements Comparable<User> {
     public void setPassword(String password) {
         this.password = password;
     }
-    @Override
+
     @Override
     public String toString() {
         StringBuilder buffer = new StringBuilder();
