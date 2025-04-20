@@ -56,8 +56,19 @@ public class ConcertResource {
     }
 
     @Path("")
-    public Response retrievePerformer(){
-        throw new NotImplementedException("retrievePerformer");
+    public Response retrievePerformer(@PathParam("id") long id){
+        EntityManager em = PersistenceManager.instance().createEntityManager();
+        Response.ResponseBuilder responseBuilder;
+        Performer p = em.find(Performer.class, id);
+        if (p != null) {
+            responseBuilder = Response.ok().entity(p);
+        }
+        else {
+            responseBuilder = Response.status(Response.Status.NOT_FOUND);
+        }
+        em.close();
+        return responseBuilder.build();
+
     }
 
     @Path("")
