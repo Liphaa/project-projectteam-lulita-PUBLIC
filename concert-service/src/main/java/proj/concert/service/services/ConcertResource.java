@@ -28,10 +28,22 @@ public class ConcertResource {
     // TODO Implement this.
     private static Logger LOGGER = LoggerFactory.getLogger(ConcertResource.class);
 
-    @Path("")
-    public Response retrieveConcert(){
-        throw new NotImplementedException("retrieveConcert");
+    @GET
+    @Path("/{id}")
+    public Response getSingleConcert(@PathParam("id") long id) {
+        EntityManager em = PersistenceManager.instance().createEntityManager();
+        Response.ResponseBuilder responseBuilder;
+        Concert c = em.find(Concert.class, id);
+        if (c != null) {
+            responseBuilder = Response.ok().entity(c);
+        }
+        else {
+            responseBuilder = Response.status(Response.Status.NOT_FOUND);
+        }
+        em.close();
+        return responseBuilder.build();
     }
+
 
     @Path("")
     public Response retrieveConcerts(){
