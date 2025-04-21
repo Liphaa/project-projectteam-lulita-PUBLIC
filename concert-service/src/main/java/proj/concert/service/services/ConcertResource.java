@@ -18,9 +18,7 @@ import proj.concert.common.dto.*;
 
 
 import java.net.URI;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 @Path("/concert-service")
 @Consumes({MediaType.APPLICATION_JSON})
@@ -100,7 +98,7 @@ public class ConcertResource {
         try {
 
             TypedQuery<AuthToken> tokenQuery = em.createQuery(
-                    "SELECT t FROM AuthToken t WHERE t.token = :token", AuthToken.class)
+                            "SELECT t FROM AuthToken t WHERE t.token = :token", AuthToken.class)
                     .setParameter("token", clientId.getValue());
             AuthToken token;
             try{
@@ -134,10 +132,50 @@ public class ConcertResource {
         }
     }
 
-    @Path("")
-    public Response getAllBookings(){
-        throw new NotImplementedException("getAllBookings");
+    @GET
+    @Path("/bookings")
+    public Response getAllBookings(@CookieParam("auth") Cookie clientId) {
+        EntityManager em = PersistenceManager.instance().createEntityManager();
+
+        try {
+            em.getTransaction().begin();
+            TypedQuery<AuthToken> tokenQuery = em.createQuery(
+                            "SELECT t FROM AuthToken t WHERE t.token = :token", AuthToken.class)
+                    .setParameter("token", clientId.getValue());
+            AuthToken token;
+            try {
+                token = tokenQuery.getSingleResult();
+            } catch (NoResultException e) {
+                return Response.status(Response.Status.UNAUTHORIZED).build();
+            }
+
+            User user = token.getUser();
+            Set<Booking> bookings = user.getBookings();
+            if (bookings == null || bookings.isEmpty()) {
+                return Response.ok(Collections.emptyList()).build();
+            }
+            List<BookingDTO> bookingDTOs = new ArrayList<>();
+            List<Seat> seats;
+            List<SeatDTO> seatDTOs;
+            for (Booking booking : bookings) {
+                seats = booking.getReservedSeats();
+                seatDTOs = new ArrayList<>();
+                for (Seat seat : seats) {
+                    seatDTOs.add(new SeatDTO(seat.getLabel(), seat.getPrice()));
+                }
+                BookingDTO bookingDTO = new BookingDTO(booking.getConcert().getId(), booking.getDate(), seatDTOs);
+                bookingDTOs.add(bookingDTO);
+            }
+            em.getTransaction().commit();
+
+            return Response.ok(bookingDTOs).build();
+
+        } finally {
+            em.close();
+        }
     }
+
+
 
     @Path("")
     public Response getBookedSeats(){
@@ -162,7 +200,7 @@ public class ConcertResource {
 
         try {
             TypedQuery<User> query = em.createQuery(
-                    "SELECT u FROM User u WHERE u.username = :username AND u.password = :password", User.class)
+                            "SELECT u FROM User u WHERE u.username = :username AND u.password = :password", User.class)
                     .setParameter("username", creds.getUsername()).setParameter("password", creds.getPassword());
 
             User user;
