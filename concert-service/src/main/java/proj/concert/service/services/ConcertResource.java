@@ -124,7 +124,8 @@ public class ConcertResource {
                 return Response.status(Response.Status.UNAUTHORIZED).build();
             }
 
-            NewCookie cookie = new NewCookie("auth", UUID.randomUUID().toString());
+            String token = UUID.randomUUID().toString();
+            NewCookie cookie = new NewCookie("auth", token);
             return Response.ok().cookie(cookie).build();
 
         } finally {
