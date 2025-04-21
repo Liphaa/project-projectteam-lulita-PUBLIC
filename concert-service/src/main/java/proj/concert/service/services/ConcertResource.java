@@ -17,7 +17,9 @@ import proj.concert.service.domain.*;
 import proj.concert.common.dto.*;
 
 
-
+import java.net.URI;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 @Path("/concert-service")
@@ -71,9 +73,19 @@ public class ConcertResource {
 
     }
 
-    @Path("")
-    public Response retrievePerformers(){
-        throw new NotImplementedException("retrievePerformers");
+    @GET
+    @Path("/performers")
+    public List<PerformerDTO> retrievePerformers(){
+        EntityManager em = PersistenceManager.instance().createEntityManager();
+        List<Performer> performers = em.createQuery("SELECT p FROM Performer p", Performer.class).getResultList();
+
+        List<PerformerDTO> performerDTOs = new ArrayList<>();
+        for (Performer performer : performers) {
+            performerDTOs.add(new PerformerDTO(performer.getId(), performer.getName(), performer.getImageName(), performer.getGenre(), performer.getBlurb()));
+        }
+        em.close();
+        return performerDTOs;
+
     }
 
     @Path("")
