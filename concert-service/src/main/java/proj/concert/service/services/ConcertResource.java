@@ -93,9 +93,45 @@ public class ConcertResource {
         throw new NotImplementedException("book");
     }
 
-    @Path("")
-    public Response getBookingById(){
-        throw new NotImplementedException("getBookingById");
+    @Path("/bookings/{id}")
+    public Response getBookingById(@PathParam("id") long id, @CookieParam("auth") Cookie clientId){
+        EntityManager em = PersistenceManager.instance().createEntityManager();
+
+        try {
+
+            TypedQuery<AuthToken> tokenQuery = em.createQuery(
+                    "SELECT t FROM AuthToken t WHERE t.token = :token", AuthToken.class)
+                    .setParameter("token", clientId.getValue());
+            AuthToken token;
+            try{
+                token = tokenQuery.getSingleResult();
+            }catch(NoResultException e){
+                return Response.status(Response.Status.FORBIDDEN).build();
+            }
+
+            User user = token.getUser();
+
+            Booking booking = em.find(Booking.class, id);
+            if (booking == null) {
+                return Response.status(Response.Status.NOT_FOUND).build();
+            }
+
+            if (!booking.getUser().equals(user)) {
+                return Response.status(Response.Status.FORBIDDEN).build();
+            }
+
+            List<Seat> seats = booking.getReservedSeats();
+            List<SeatDTO> seatDTOs = new ArrayList<>();
+            for (Seat seat : seats) {
+                seatDTOs.add(new SeatDTO(seat.getLabel(), seat.getPrice()));
+            }
+
+            BookingDTO bookingDTO = new BookingDTO(booking.getConcert().getId(), booking.getDate(), seatDTOs );
+            return Response.ok(bookingDTO).build();
+
+        } finally {
+            em.close();
+        }
     }
 
     @Path("")
