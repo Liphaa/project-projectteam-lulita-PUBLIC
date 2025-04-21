@@ -125,6 +125,11 @@ public class ConcertResource {
             }
 
             String token = UUID.randomUUID().toString();
+            AuthToken authToken = new AuthToken(token, user);
+            em.getTransaction().begin();
+            em.persist(authToken);
+            em.getTransaction().commit();
+
             NewCookie cookie = new NewCookie("auth", token);
             return Response.ok().cookie(cookie).build();
 
