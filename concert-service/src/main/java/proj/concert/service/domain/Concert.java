@@ -13,13 +13,16 @@ import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 @Entity
+@Table(name = "CONCERTS")
 public class Concert implements Comparable<Concert>{
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private String title;
+    @Column(name = "IMAGE_NAME")
     private String imageName;
+    @Column(length = 1000)
     private String blurb;
 
     @ElementCollection

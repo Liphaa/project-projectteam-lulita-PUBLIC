@@ -81,6 +81,7 @@ public class ConcertResource {
         for (Performer performer : performers) {
             performerDTOs.add(new PerformerDTO(performer.getId(), performer.getName(), performer.getImageName(), performer.getGenre(), performer.getBlurb()));
         }
+        System.out.println(performerDTOs);
         em.close();
         return performerDTOs;
 
