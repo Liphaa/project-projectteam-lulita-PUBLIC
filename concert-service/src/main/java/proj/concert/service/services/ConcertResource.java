@@ -2,10 +2,7 @@ package proj.concert.service.services;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import proj.concert.common.dto.ConcertDTO;
-import proj.concert.common.dto.PerformerDTO;
-import proj.concert.common.dto.SeatDTO;
-import proj.concert.common.dto.UserDTO;
+import proj.concert.common.dto.*;
 import proj.concert.common.types.BookingStatus;
 import proj.concert.common.types.Genre;
 import proj.concert.service.domain.*;
@@ -72,9 +69,28 @@ public class ConcertResource {
         }
     }
 
-    @Path("")
+    @Path("/concerts/summaries")
     public Response retrieveConcertSummary(){
-        throw new NotImplementedException("retrieveConcertSummaries");
+        EntityManager em = PersistenceManager.instance().createEntityManager();
+        try {
+            TypedQuery<Concert> query = em.createQuery("select c from Concert c", Concert.class);
+            List<Concert> concerts = query.getResultList();
+            List<ConcertSummaryDTO> concertSummaryDTOS = new ArrayList<>();
+            for (Concert c : concerts) {
+                // Create a new DTO for each concert and add it to the list
+                ConcertSummaryDTO summaryDTO = new ConcertSummaryDTO(c.getId(), c.getTitle(), c.getImageName());
+                concertSummaryDTOS.add(summaryDTO);
+            }
+
+            return Response.ok(concertSummaryDTOS).build();
+        }
+        catch (Exception e) {
+            return Response.serverError().build();
+        }
+        finally {
+            em.close();
+        }
+
     }
 
     @Path("")
