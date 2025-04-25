@@ -274,7 +274,7 @@ public class ConcertResource {
     public static SeatDTO seatToDto(Seat s) {
         return new SeatDTO(s.getLabel(), s.getPrice());
     }
-}
+
     @GET
     @Path("/seats/{date}") //3 in one function to get seats
     public Response getSeats(@QueryParam("status") BookingStatus stat, @PathParam("date") String dateStr) {
@@ -283,34 +283,33 @@ public class ConcertResource {
 
         try {
             LocalDateTime date = LocalDateTime.parse(dateStr);
-            if(stat == BookingStatus.Booked) {
-             query = em.createQuery("select s from Seat s where s.date = :date and s.isBooked = true", Seat.class);
+            if (stat == BookingStatus.Booked) {
+                query = em.createQuery("select s from Seat s where s.date = :date and s.isBooked = true", Seat.class);
+            } else if (stat == BookingStatus.Unbooked) {
+                query = em.createQuery("select s from Seat s where s.date = :date and s.isBooked = false", Seat.class);
+            } else if (stat == BookingStatus.Any) {
+                query = em.createQuery("select s from Seat s where s.date = :date", Seat.class);
+            } else {
+                return Response.status(Response.Status.BAD_REQUEST).entity("Invalid status").build();
             }
-            else if (stat == BookingStatus.Unbooked) {
-                    query = em.createQuery("select s from Seat s where s.date = :date and s.isBooked = false", Seat.class);
-                }
-            else if (stat == BookingStatus.Any){
-                    query = em.createQuery("select s from Seat s where s.date = :date", Seat.class);
-                }
-            else {return Response.status(Response.Status.BAD_REQUEST).entity("Invalid status").build(); }
             query.setParameter("date", date);
             List<Seat> seats = query.getResultList();
 
-            if(seats.isEmpty()) {  return Response.status(Response.Status.NOT_FOUND).build(); }
+            if (seats.isEmpty()) {
+                return Response.status(Response.Status.NOT_FOUND).build();
+            }
 
             List<SeatDTO> seatDTOs = new ArrayList<>(); //convert seat objects into seat DTO
-            for(Seat s : seats) {
+            for (Seat s : seats) {
                 seatDTOs.add(seatToDto(s));
             }
             return Response.ok(seatDTOs).build();
-        }
-        catch(Exception e) {
+        } catch (Exception e) {
             return Response.serverError().build();
+        } finally {
+            em.close();
         }
-        finally {
-          em.close();
-        }
-
+    }
 
     @POST
     @Path("/login")
