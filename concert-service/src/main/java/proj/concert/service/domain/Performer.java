@@ -12,13 +12,16 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
 import proj.concert.common.types.Genre;
 
 @Entity
+@Table(name = "PERFORMERS")
 public class Performer implements Comparable<Performer> {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private String name;
+    @Column(name = "IMAGE_NAME")
     private String imageName;
+    @Column(length = 1000)
     private String blurb;
 
     @Enumerated(EnumType.STRING)
