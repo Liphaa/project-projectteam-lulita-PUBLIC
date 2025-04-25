@@ -25,18 +25,19 @@ public class Concert implements Comparable<Concert>{
     @Column(length = 1000)
     private String blurb;
 
-    @ElementCollection
-    @CollectionTable (
-        name = "CONCERT_DATES",
-        joinColumns = @JoinColumn(name = "CONCERT_ID"))
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(
+            name = "CONCERT_DATES",
+            joinColumns = @JoinColumn(name = "CONCERT_ID"))
     @Column(name = "DATE")
-    private Set<LocalDateTime> dates;
 
+    private Set<LocalDateTime> dates = new HashSet<>();
+  
     @ManyToMany(cascade = CascadeType.PERSIST)
     @JoinTable(
-        name = "CONCERT_PERFORMER",
-        joinColumns = @JoinColumn(name = "CONCERT_ID"),
-        inverseJoinColumns = @JoinColumn(name = "PERFORMER_ID"))
+            name = "CONCERT_PERFORMER",
+            joinColumns = @JoinColumn(name = "CONCERT_ID"),
+            inverseJoinColumns = @JoinColumn(name = "PERFORMER_ID"))
     private List<Performer> performers;
 
 

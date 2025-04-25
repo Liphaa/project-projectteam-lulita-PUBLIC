@@ -54,8 +54,13 @@ public class User implements Comparable<User> {
     public void setPassword(String password) {
         this.password = password;
     }
-    public Set<Booking> getBookings() { return bookings; };
-    public void setBookings(Set<Booking> bookings) { this.bookings = bookings; };
+public Set<Booking> getBookings() {
+    return bookings;
+}
+
+public void setBookings(Set<Booking> bookings) {
+    this.bookings = bookings;
+}
 
     @Override
     public String toString() {
