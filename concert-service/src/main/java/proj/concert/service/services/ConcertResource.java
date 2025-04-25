@@ -2,10 +2,7 @@ package proj.concert.service.services;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import proj.concert.common.dto.ConcertDTO;
-import proj.concert.common.dto.PerformerDTO;
-import proj.concert.common.dto.SeatDTO;
-import proj.concert.common.dto.UserDTO;
+import proj.concert.common.dto.*;
 import proj.concert.common.types.BookingStatus;
 import proj.concert.common.types.Genre;
 import proj.concert.service.domain.*;
@@ -72,9 +69,28 @@ public class ConcertResource {
         }
     }
 
-    @Path("")
+    @Path("/concerts/summaries")
     public Response retrieveConcertSummary(){
-        throw new NotImplementedException("retrieveConcertSummaries");
+        EntityManager em = PersistenceManager.instance().createEntityManager();
+        try {
+            TypedQuery<Concert> query = em.createQuery("select c from Concert c", Concert.class);
+            List<Concert> concerts = query.getResultList();
+            List<ConcertSummaryDTO> concertSummaryDTOS = new ArrayList<>();
+            for (Concert c : concerts) {
+                // Create a new DTO for each concert and add it to the list
+                ConcertSummaryDTO summaryDTO = new ConcertSummaryDTO(c.getId(), c.getTitle(), c.getImageName());
+                concertSummaryDTOS.add(summaryDTO);
+            }
+
+            return Response.ok(concertSummaryDTOS).build();
+        }
+        catch (Exception e) {
+            return Response.serverError().build();
+        }
+        finally {
+            em.close();
+        }
+
     }
 
     @Path("")
@@ -108,12 +124,53 @@ public class ConcertResource {
         return performerDTOs;
 
     }
+    @POST
+    @Path("/bookings")
+    public Response book(BookingRequest bookingRequest, @CookieParam("auth") Cookie clientId){
+        EntityManager em = PersistenceManager.instance().createEntityManager();
+        try {
+            TypedQuery<AuthToken> tokenQuery = em.createQuery(
+                            "SELECT t FROM AuthToken t WHERE t.token = :token", AuthToken.class)
+                    .setParameter("token", clientId.getValue());
+            AuthToken token;
+        try{
+            token = tokenQuery.getSingleResult();
+        }
+            catch (NoResultException e) {
+                return Response.status(Response.Status.FORBIDDEN).entity("Invalid token").build();
+            }
+            User user = token.getUser();
 
-    @Path("")
-    public Response book(){
-        throw new NotImplementedException("book");
+        //create a booking object
+            Booking booking = new Booking();
+            booking.setUser(user);
+            booking.setConcert(em.find(Concert.class, bookingRequest.getConcertId()));
+            booking.setDate(bookingRequest.getDate());
+
+            List<Seat> reservedSeats = new ArrayList<>();
+            for (String seatLabels : bookingRequest.getSeatLabels()) {
+                Seat seat = em.find(Seat.class, seatLabels);
+                if (seat != null) {
+                    reservedSeats.add(seat);
+                }
+            }
+            booking.setReservedSeats(reservedSeats);
+            em.getTransaction().begin();
+            em.persist(booking);
+            em.getTransaction().commit();
+
+            List<SeatDTO> seatDTOs = new ArrayList<>();
+            for (Seat seat : reservedSeats) {
+                seatDTOs.add(new SeatDTO(seat.getLabel(), seat.getPrice()));
+            }
+            BookingDTO bookingDTO = new BookingDTO(booking.getConcert().getId(), booking.getDate(), seatDTOs);
+
+            return Response.status(Response.Status.CREATED).entity(bookingDTO).build();
+
+        } finally {
+            em.close();
+        }
     }
-
     @Path("/bookings/{id}")
     public Response getBookingById(@PathParam("id") long id, @CookieParam("auth") Cookie clientId){
         EntityManager em = PersistenceManager.instance().createEntityManager();
@@ -253,8 +310,7 @@ public class ConcertResource {
         finally {
           em.close();
         }
-}
-  
+
 
     @POST
     @Path("/login")
