@@ -35,14 +35,18 @@ public class ConcertResource {
     public Response getSingleConcert(@PathParam("id") long id) {
         EntityManager em = PersistenceManager.instance().createEntityManager();
         Response.ResponseBuilder responseBuilder;
-        Concert c = em.find(Concert.class, id);
-        if (c != null) {
-            responseBuilder = Response.ok().entity(c);
+        try {
+            Concert c = em.find(Concert.class, id);
+            if (c != null) {
+                ConcertDTO concertDTO = concertToDto(c);
+                responseBuilder = Response.ok().entity(concertDTO);
+            } else {
+                responseBuilder = Response.status(Response.Status.NOT_FOUND);
+            }
         }
-        else {
-            responseBuilder = Response.status(Response.Status.NOT_FOUND);
+        finally {
+            em.close();
         }
-        em.close();
         return responseBuilder.build();
     }
 
