@@ -69,6 +69,7 @@ public class ConcertResource {
         }
     }
 
+    @GET
     @Path("/concerts/summaries")
     public Response retrieveConcertSummary(){
         EntityManager em = PersistenceManager.instance().createEntityManager();
@@ -93,7 +94,8 @@ public class ConcertResource {
 
     }
 
-    @Path("")
+    @GET
+    @Path("/performers/{id}")
     public Response retrievePerformer(@PathParam("id") long id){
         EntityManager em = PersistenceManager.instance().createEntityManager();
         Response.ResponseBuilder responseBuilder;
@@ -171,6 +173,8 @@ public class ConcertResource {
             em.close();
         }
     }
+
+    @GET
     @Path("/bookings/{id}")
     public Response getBookingById(@PathParam("id") long id, @CookieParam("auth") Cookie clientId){
         EntityManager em = PersistenceManager.instance().createEntityManager();
@@ -212,6 +216,7 @@ public class ConcertResource {
         }
     }
 
+    @GET
     @Path("/bookings")
     public Response getAllBookings(@CookieParam("auth") Cookie clientId) {
         EntityManager em = PersistenceManager.instance().createEntityManager();
