@@ -31,17 +31,17 @@ public class ConcertResource {
     private static Logger LOGGER = LoggerFactory.getLogger(ConcertResource.class);
 
     @GET
-    @Path("/{id}")
+    @Path("/concerts/{id}")
     public Response getSingleConcert(@PathParam("id") long id) {
         EntityManager em = PersistenceManager.instance().createEntityManager();
         Response.ResponseBuilder responseBuilder;
         try {
             Concert c = em.find(Concert.class, id);
-            if (c != null) {
+            if (c == null) {
+                responseBuilder = Response.status(Response.Status.NOT_FOUND);
+            } else {
                 ConcertDTO concertDTO = concertToDto(c);
                 responseBuilder = Response.ok().entity(concertDTO);
-            } else {
-                responseBuilder = Response.status(Response.Status.NOT_FOUND);
             }
         }
         finally {
@@ -103,14 +103,18 @@ public class ConcertResource {
     public Response retrievePerformer(@PathParam("id") long id){
         EntityManager em = PersistenceManager.instance().createEntityManager();
         Response.ResponseBuilder responseBuilder;
-        Performer p = em.find(Performer.class, id);
-        if (p != null) {
-            responseBuilder = Response.ok().entity(p);
+        try {
+            Performer p = em.find(Performer.class, id);
+            if (p != null) {
+                PerformerDTO performerDTO = performerToDto(p);
+                responseBuilder = Response.ok().entity(performerDTO);
+            } else {
+                responseBuilder = Response.status(Response.Status.NOT_FOUND);
+            }
         }
-        else {
-            responseBuilder = Response.status(Response.Status.NOT_FOUND);
-        }
-        em.close();
+        finally{
+                em.close();
+            }
         return responseBuilder.build();
 
     }
