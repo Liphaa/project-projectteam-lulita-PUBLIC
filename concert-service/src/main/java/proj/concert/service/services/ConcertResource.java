@@ -235,6 +235,9 @@ public class ConcertResource {
     @Path("/bookings")
     public Response getAllBookings(@CookieParam("auth") Cookie clientId) {
         EntityManager em = PersistenceManager.instance().createEntityManager();
+        if (clientId == null){
+            return Response.status(Response.Status.UNAUTHORIZED).build();
+        }
 
         try {
             em.getTransaction().begin();
