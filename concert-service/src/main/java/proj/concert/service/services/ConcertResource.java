@@ -185,17 +185,22 @@ public class ConcertResource {
     @GET
     @Path("/bookings/{id}")
     public Response getBookingById(@PathParam("id") long id, @CookieParam("auth") Cookie clientId){
+
         EntityManager em = PersistenceManager.instance().createEntityManager();
+        if (clientId == null){
+            return Response.status(Response.Status.UNAUTHORIZED).build();
+        }
 
         try {
+            em.getTransaction().begin();
 
             TypedQuery<AuthToken> tokenQuery = em.createQuery(
                             "SELECT t FROM AuthToken t WHERE t.token = :token", AuthToken.class)
                     .setParameter("token", clientId.getValue());
             AuthToken token;
-            try{
+            try {
                 token = tokenQuery.getSingleResult();
-            }catch(NoResultException e){
+            } catch (NoResultException e) {
                 return Response.status(Response.Status.FORBIDDEN).build();
             }
 
@@ -206,7 +211,7 @@ public class ConcertResource {
                 return Response.status(Response.Status.NOT_FOUND).build();
             }
 
-            if (!booking.getUser().equals(user)) {
+            if (booking.getUser().getId() != user.getId()) {
                 return Response.status(Response.Status.FORBIDDEN).build();
             }
 
@@ -215,12 +220,14 @@ public class ConcertResource {
             for (Seat seat : seats) {
                 seatDTOs.add(new SeatDTO(seat.getLabel(), seat.getPrice()));
             }
+            //System.out.println("BOOKEDDDD:" + seatDTOs);
+            BookingDTO bookingDTO = new BookingDTO(booking.getConcert().getId(), booking.getDate(), seatDTOs);
 
-            BookingDTO bookingDTO = new BookingDTO(booking.getConcert().getId(), booking.getDate(), seatDTOs );
-            return Response.ok(bookingDTO).build();
+            em.getTransaction().commit();
+            return Response.ok().entity(bookingDTO).build();
 
         } finally {
-                      em.close();
+            em.close();
         }
     }
 
