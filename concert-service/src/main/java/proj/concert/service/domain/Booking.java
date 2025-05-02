@@ -37,8 +37,10 @@ public class Booking {
     @OneToMany(mappedBy = "booking", cascade = CascadeType.PERSIST)
     private List<Seat> reservedSeats;
 
-    public Booking(User user, List<Seat> reservedSeats) {
+    public Booking(User user, Concert concert, LocalDateTime date, List<Seat> reservedSeats) {
         this.user = user;
+        this.concert = concert;
+        this.date = date;
         this.reservedSeats = reservedSeats;
     }
     public Booking() {}
