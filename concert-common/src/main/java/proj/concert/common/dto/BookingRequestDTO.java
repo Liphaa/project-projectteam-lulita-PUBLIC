@@ -18,8 +18,8 @@ import java.util.List;
 public class BookingRequestDTO {
 
     private long concertId;
-    @JsonSerialize(contentUsing = LocalDateTimeSerializer.class)
-    @JsonDeserialize(contentUsing = LocalDateTimeDeserializer.class)
+    @JsonSerialize(using = LocalDateTimeSerializer.class)
+    @JsonDeserialize(using = LocalDateTimeDeserializer.class)
     private LocalDateTime date;
     private List<String> seatLabels = new ArrayList<>();
 
