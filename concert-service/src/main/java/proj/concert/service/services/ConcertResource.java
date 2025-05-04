@@ -134,49 +134,98 @@ public class ConcertResource {
         return performerDTOs;
 
     }
+
     @POST
     @Path("/bookings")
-    public Response book(BookingRequest bookingRequest, @CookieParam("auth") Cookie clientId){
+    public Response book(BookingRequestDTO bookingRequest, @CookieParam("auth") Cookie clientId) {
+        if (clientId == null) {
+            return Response.status(Response.Status.UNAUTHORIZED).entity("Missing auth cookie").build();
+        }
+
         EntityManager em = PersistenceManager.instance().createEntityManager();
         try {
+            em.getTransaction().begin();
+
             TypedQuery<AuthToken> tokenQuery = em.createQuery(
                             "SELECT t FROM AuthToken t WHERE t.token = :token", AuthToken.class)
                     .setParameter("token", clientId.getValue());
-            AuthToken token;
-        try{
-            token = tokenQuery.getSingleResult();
-        }
-            catch (NoResultException e) {
-                return Response.status(Response.Status.FORBIDDEN).entity("Invalid token").build();
-            }
-            User user = token.getUser();
 
-        //create a booking object
-            Booking booking = new Booking();
-            booking.setUser(user);
-            booking.setConcert(em.find(Concert.class, bookingRequest.getConcertId()));
-            booking.setDate(bookingRequest.getDate());
+            AuthToken token;
+            try {
+                token = tokenQuery.getSingleResult();
+            } catch (NoResultException e) {
+                em.getTransaction().rollback();
+                return Response.status(Response.Status.FORBIDDEN).build();
+            }
+
+            User user = token.getUser();
+            Concert concert = em.find(Concert.class, bookingRequest.getConcertId());
+
+            if (concert == null) {
+                em.getTransaction().rollback();
+                return Response.status(Response.Status.BAD_REQUEST).build();
+            }
+
+            LocalDateTime date = bookingRequest.getDate();
+            if (!concert.getDates().contains(date)) {
+                em.getTransaction().rollback();
+                return Response.status(Response.Status.BAD_REQUEST).build();
+            }
 
             List<Seat> reservedSeats = new ArrayList<>();
-            for (String seatLabels : bookingRequest.getSeatLabels()) {
-                Seat seat = em.find(Seat.class, seatLabels);
-                if (seat != null) {
-                    reservedSeats.add(seat);
+            for (String seatLabel : bookingRequest.getSeatLabels()) {
+                TypedQuery<Seat> seatQuery = em.createQuery(
+                                "SELECT s FROM Seat s WHERE s.label = :label AND s.date = :date", Seat.class)
+                        .setParameter("label", seatLabel)
+                        .setParameter("date", date);
+                Seat seat;
+                try {
+                    seat = seatQuery.getSingleResult();
+                } catch (NoResultException e) {
+                    em.getTransaction().rollback();
+                    return Response.status(Response.Status.FORBIDDEN).build();
                 }
+
+                if (seat.isBooked()) {
+                    em.getTransaction().rollback();
+                    return Response.status(Response.Status.FORBIDDEN).build();
+                }
+
+                seat.setBooked(true);
+                reservedSeats.add(seat);
             }
-            booking.setReservedSeats(reservedSeats);
-            em.getTransaction().begin();
+
+            Booking booking = new Booking(user, concert, date, reservedSeats);
+
+            for (Seat seat : reservedSeats) {
+                seat.setBooking(booking);
+            }
             em.persist(booking);
-            em.getTransaction().commit();
 
             List<SeatDTO> seatDTOs = new ArrayList<>();
-            for (Seat seat : reservedSeats) {
+            for (Seat seat : booking.getReservedSeats()) {
                 seatDTOs.add(new SeatDTO(seat.getLabel(), seat.getPrice()));
             }
-            BookingDTO bookingDTO = new BookingDTO(booking.getConcert().getId(), booking.getDate(), seatDTOs);
 
-            return Response.status(Response.Status.CREATED).entity(bookingDTO).build();
 
+            BookingDTO bookingDTO = new BookingDTO(concert.getId(), date, seatDTOs);
+
+
+            em.getTransaction().commit();
+            URI bookingUri = UriBuilder.fromUri("concert-service/bookings/{id}")
+                    .build(booking.getId());
+
+
+            return Response.created(bookingUri)  // <-- this sets 201 + Location header
+                    .entity(bookingDTO)
+                    .build();
+
+        }catch (Exception e) {
+            e.printStackTrace(); // log or send to logger
+            if (em.getTransaction().isActive()) {
+                em.getTransaction().rollback();
+            }
+            return Response.serverError().build();
         } finally {
             em.close();
         }
