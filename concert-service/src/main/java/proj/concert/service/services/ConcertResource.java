@@ -367,9 +367,6 @@ public class ConcertResource {
             query.setParameter("date", date);
             List<Seat> seats = query.getResultList();
 
-            if (seats.isEmpty()) {
-                return Response.status(Response.Status.NOT_FOUND).build();
-            }
 
             List<SeatDTO> seatDTOs = new ArrayList<>(); //convert seat objects into seat DTO
             for (Seat s : seats) {
