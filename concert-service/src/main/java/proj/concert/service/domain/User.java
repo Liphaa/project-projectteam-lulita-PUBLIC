@@ -65,6 +65,15 @@ public Set<Booking> getBookings() {
 public void setBookings(Set<Booking> bookings) {
     this.bookings = bookings;
 }
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
+    private Set<Subscription> subscriptions = new HashSet<>();
+    public Set<Subscription> getSubscriptions() {
+        return subscriptions;
+    }
+    public void setSubscriptions(Set<Subscription> subscriptions) {
+        this.subscriptions = subscriptions;
+    }
+
 
     @Override
     public String toString() {

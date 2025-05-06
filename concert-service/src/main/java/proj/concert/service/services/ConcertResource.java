@@ -29,6 +29,8 @@ public class ConcertResource {
 
     // TODO Implement this.
     private static Logger LOGGER = LoggerFactory.getLogger(ConcertResource.class);
+    private static final List<ActiveSubscription> subs = new Vector<>();
+
 
     @GET
     @Path("/concerts/{id}")
