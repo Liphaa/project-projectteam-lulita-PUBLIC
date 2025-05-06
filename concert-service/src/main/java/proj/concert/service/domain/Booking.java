@@ -24,10 +24,11 @@ public class Booking {
     @ManyToOne(optional = false)
     @JoinColumn(name = "user_id")
     private User user;
+  
+  @ManyToOne(optional = false)
+  @JoinColumn(name = "concert_id")
+  private Concert concert;
 
-    @ManyToOne(optional = false)
-    @JoinColumn(name = "concert_id")
-    private Concert concert;
 
     @JsonSerialize(using = LocalDateTimeSerializer.class)
     @JsonDeserialize(using = LocalDateTimeDeserializer.class)
@@ -36,8 +37,10 @@ public class Booking {
     @OneToMany(mappedBy = "booking", cascade = CascadeType.PERSIST)
     private List<Seat> reservedSeats;
 
-    public Booking(User user, List<Seat> reservedSeats) {
+    public Booking(User user, Concert concert, LocalDateTime date, List<Seat> reservedSeats) {
         this.user = user;
+        this.concert = concert;
+        this.date = date;
         this.reservedSeats = reservedSeats;
     }
     public Booking() {}

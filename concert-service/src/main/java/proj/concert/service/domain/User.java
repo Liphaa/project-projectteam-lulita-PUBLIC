@@ -11,6 +11,7 @@ import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 @Entity
+@Table(name = "USERS")
 public class User implements Comparable<User> {
 
     @Id
@@ -41,6 +42,10 @@ public class User implements Comparable<User> {
     public User() {
     }
 
+    public Long getId() {
+        return id;
+    }
+
     public String getUsername() {
         return username;
     }
@@ -53,8 +58,13 @@ public class User implements Comparable<User> {
     public void setPassword(String password) {
         this.password = password;
     }
-    public Set<Booking> getBookings() { return bookings; };
-    public void setBookings(Set<Booking> bookings) { this.bookings = bookings; };
+public Set<Booking> getBookings() {
+    return bookings;
+}
+
+public void setBookings(Set<Booking> bookings) {
+    this.bookings = bookings;
+}
 
     @Override
     public String toString() {
