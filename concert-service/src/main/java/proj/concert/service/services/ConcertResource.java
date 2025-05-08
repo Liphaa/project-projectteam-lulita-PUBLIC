@@ -221,7 +221,7 @@ public class ConcertResource {
             URI bookingUri = UriBuilder.fromUri("concert-service/bookings/{id}")
                     .build(booking.getId());
 
-
+            processSubscription(concert, date);
             return Response.created(bookingUri)  // <-- this sets 201 + Location header
                     .entity(bookingDTO)
                     .build();
@@ -469,6 +469,56 @@ public class ConcertResource {
             em.close();
         }
     }
+
+
+    private void processSubscription(Concert concert, LocalDateTime date) {
+
+
+        EntityManager em = PersistenceManager.instance().createEntityManager();
+        em.getTransaction().begin();
+
+
+        List<Seat> seats = em.createQuery(
+                        "SELECT s FROM Seat s WHERE s.date = :date", Seat.class)
+                .setParameter("date", date).getResultList();
+
+
+        List<Seat> bookedSeats = new ArrayList<>();
+        for (Seat s : seats) {
+            if(s.isBooked()) {
+                bookedSeats.add(s);
+            }
+        }
+
+
+        int currentPercentage = (int) (((double) bookedSeats.size() / seats.size()) * 100);
+        // System.out.println("blaaaaaa" +( seats.size() - bookedSeats.size()));
+        // System.out.println("Current booking %: " + currentPercentage);
+
+
+        // System.out.println("Sizeeee: " + subs.size());
+
+
+        for (ActiveSubscription sub : subs) {
+            Subscription s = sub.getSubscription();
+            // System.out.println("Threshold set by user: " + s.getPercentageBooked());
+
+
+            if (s.getConcert().getId().equals(concert.getId()) && s.getDate().equals(date) &&
+                    currentPercentage >= s.getPercentageBooked()) {
+                sub.getAsyncResponse().resume(new ConcertInfoNotificationDTO(seats.size() - bookedSeats.size()));
+            }
+
+
+        }
+
+
+        em.getTransaction().commit();
+        em.close();
+
+
+    }
+
 
 
 
