@@ -7,7 +7,10 @@ import proj.concert.common.types.BookingStatus;
 import proj.concert.common.types.Genre;
 import proj.concert.service.domain.*;
 
+import javax.persistence.LockModeType;
 import javax.ws.rs.*;
+import javax.ws.rs.container.AsyncResponse;
+import javax.ws.rs.container.Suspended;
 import javax.ws.rs.core.*;
 import javax.persistence.EntityManager;
 import javax.persistence.TypedQuery;
@@ -29,6 +32,8 @@ public class ConcertResource {
 
     // TODO Implement this.
     private static Logger LOGGER = LoggerFactory.getLogger(ConcertResource.class);
+    private static final List<ActiveSubscription> subs = new Vector<>();
+
 
     @GET
     @Path("/concerts/{id}")
@@ -177,7 +182,8 @@ public class ConcertResource {
                 TypedQuery<Seat> seatQuery = em.createQuery(
                                 "SELECT s FROM Seat s WHERE s.label = :label AND s.date = :date", Seat.class)
                         .setParameter("label", seatLabel)
-                        .setParameter("date", date);
+                        .setParameter("date", date)
+                        .setLockMode(LockModeType.PESSIMISTIC_WRITE); //When booking seats prevents other people from being able to look at it
                 Seat seat;
                 try {
                     seat = seatQuery.getSingleResult();
@@ -215,7 +221,7 @@ public class ConcertResource {
             URI bookingUri = UriBuilder.fromUri("concert-service/bookings/{id}")
                     .build(booking.getId());
 
-
+            processSubscription(concert, date);
             return Response.created(bookingUri)  // <-- this sets 201 + Location header
                     .entity(bookingDTO)
                     .build();
@@ -412,6 +418,108 @@ public class ConcertResource {
         }
 
     }
+
+    @POST
+    @Path("/subscribe/concertInfo")
+    public void subscribeConcertInfo(@Suspended AsyncResponse sub, @CookieParam("auth") Cookie clientId, ConcertInfoSubscriptionDTO subscriptionDTO) {
+        if (clientId == null) {
+            sub.resume(Response.status(Response.Status.UNAUTHORIZED).entity("Missing auth cookie").build());
+            return;
+        }
+
+        EntityManager em = PersistenceManager.instance().createEntityManager();
+        try {
+            em.getTransaction().begin();
+            Concert concert;
+
+            concert = em.find(Concert.class, subscriptionDTO.getConcertId());
+            if (concert == null) {
+                sub.resume(Response.status(Response.Status.BAD_REQUEST).build());
+                return;
+            }
+
+            Set<LocalDateTime> dates = concert.getDates();
+            if (!dates.contains(subscriptionDTO.getDate())) {
+                sub.resume(Response.status(Response.Status.BAD_REQUEST).build());
+                return;
+            }
+
+            TypedQuery<AuthToken> tokenQuery = em.createQuery(
+                            "SELECT t FROM AuthToken t WHERE t.token = :token", AuthToken.class)
+                    .setParameter("token", clientId.getValue());
+
+            AuthToken token;
+            try {
+                token = tokenQuery.getSingleResult();
+            } catch (NoResultException e) {
+                sub.resume(Response.status(Response.Status.FORBIDDEN).build());
+                return;
+            }
+
+
+            User user = token.getUser();
+            Subscription subscription = new Subscription(user, concert, subscriptionDTO.getDate(), subscriptionDTO.getPercentageBooked());
+
+
+            em.persist(subscription);
+            subs.add(new ActiveSubscription(subscription, sub));
+            em.getTransaction().commit();
+
+        } finally {
+            em.close();
+        }
+    }
+
+
+    private void processSubscription(Concert concert, LocalDateTime date) {
+
+
+        EntityManager em = PersistenceManager.instance().createEntityManager();
+        em.getTransaction().begin();
+
+
+        List<Seat> seats = em.createQuery(
+                        "SELECT s FROM Seat s WHERE s.date = :date", Seat.class)
+                .setParameter("date", date).getResultList();
+
+
+        List<Seat> bookedSeats = new ArrayList<>();
+        for (Seat s : seats) {
+            if(s.isBooked()) {
+                bookedSeats.add(s);
+            }
+        }
+
+
+        int currentPercentage = (int) (((double) bookedSeats.size() / seats.size()) * 100);
+        // System.out.println("blaaaaaa" +( seats.size() - bookedSeats.size()));
+        // System.out.println("Current booking %: " + currentPercentage);
+
+
+        // System.out.println("Sizeeee: " + subs.size());
+
+
+        for (ActiveSubscription sub : subs) {
+            Subscription s = sub.getSubscription();
+            // System.out.println("Threshold set by user: " + s.getPercentageBooked());
+
+
+            if (s.getConcert().getId().equals(concert.getId()) && s.getDate().equals(date) &&
+                    currentPercentage >= s.getPercentageBooked()) {
+                sub.getAsyncResponse().resume(new ConcertInfoNotificationDTO(seats.size() - bookedSeats.size()));
+            }
+
+
+        }
+
+
+        em.getTransaction().commit();
+        em.close();
+
+
+    }
+
+
 
 
 }
