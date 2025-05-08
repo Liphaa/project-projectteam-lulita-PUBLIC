@@ -120,14 +120,14 @@ public class Concert implements Comparable<Concert>{
 
         Concert rhs = (Concert) obj;
         return new EqualsBuilder().
-                append(title, rhs.title).
+                append(id, rhs.id).
                 isEquals();
     }
 
     @Override
     public int hashCode() {
         return new HashCodeBuilder(17, 31).
-                append(title).hashCode();
+                append(id).hashCode();
     }
 
     @Override
