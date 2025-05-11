@@ -308,6 +308,7 @@ public class ConcertResource {
 
             User user = token.getUser();
             Set<Booking> bookings = user.getBookings();
+
             if (bookings == null || bookings.isEmpty()) {
                 return Response.ok(Collections.emptyList()).build();
             }

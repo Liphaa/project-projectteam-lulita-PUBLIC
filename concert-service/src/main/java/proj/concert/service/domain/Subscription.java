@@ -12,7 +12,7 @@ public class Subscription {
     private Long id;
 
 
-    @OneToOne(fetch = FetchType.EAGER)
+    @OneToOne(fetch = FetchType.LAZY)
     private Concert concert;
 
 
