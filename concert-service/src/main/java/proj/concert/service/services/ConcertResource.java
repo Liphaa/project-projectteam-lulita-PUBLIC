@@ -302,12 +302,16 @@ public class ConcertResource {
     @Path("/bookings")
     public Response getAllBookings(@CookieParam("auth") Cookie clientId) {
         EntityManager em = PersistenceManager.instance().createEntityManager();
+
+        //return UNAUTHORIZED response when attempting to retrieve all bookings without logging in
         if (clientId == null){
             return Response.status(Response.Status.UNAUTHORIZED).build();
         }
 
         try {
             em.getTransaction().begin();
+
+            //Get the client from the token
             TypedQuery<AuthToken> tokenQuery = em.createQuery(
                             "SELECT t FROM AuthToken t WHERE t.token = :token", AuthToken.class)
                     .setParameter("token", clientId.getValue());
@@ -317,21 +321,22 @@ public class ConcertResource {
             } catch (NoResultException e) {
                 return Response.status(Response.Status.UNAUTHORIZED).build();
             }
-
             User user = token.getUser();
 
+            //Query for all bookings of the user found from the token, join fetch for some attributes of booking to solve n+1 problem
             TypedQuery<Booking> bookingQuery = em.createQuery(
                     "SELECT DISTINCT b FROM Booking b " +
                             "JOIN FETCH b.reservedSeats s " +
                             "JOIN FETCH b.concert " +
                             "WHERE b.user = :user", Booking.class);
             bookingQuery.setParameter("user", user);
-
             List<Booking> bookings = bookingQuery.getResultList();
-
+            //if no booking is found, return an empty list
             if (bookings == null || bookings.isEmpty()) {
                 return Response.ok(Collections.emptyList()).build();
             }
+
+            //Creating a list of bookingDTO objects from the list of booking objects to return in the response
             List<BookingDTO> bookingDTOs = new ArrayList<>();
             List<Seat> seats;
             List<SeatDTO> seatDTOs;
@@ -344,8 +349,8 @@ public class ConcertResource {
                 BookingDTO bookingDTO = new BookingDTO(booking.getConcert().getId(), booking.getDate(), seatDTOs);
                 bookingDTOs.add(bookingDTO);
             }
-            em.getTransaction().commit();
 
+            em.getTransaction().commit();
             return Response.ok(bookingDTOs).build();
 
         } finally {
@@ -514,7 +519,7 @@ public class ConcertResource {
                 }
             }
 
-            //calculate percentage of booked seats
+            //calculate percentage of booked seats = number of bookedSeats divided by total number of seats
             int currentPercentage = (int) (((double) bookedSeats.size() / seats.size()) * 100);
 
             //Testing for calculations
@@ -522,7 +527,7 @@ public class ConcertResource {
             //System.out.println("Current booking %: " + currentPercentage);
 
             //Testing the size of subs list
-            // System.out.println("Size: " + subs.size());
+            //System.out.println("Size: " + subs.size());
 
             //Run a loop through each subscription in subs list and resume response once threshold of subscription is met
             for (ActiveSubscription sub : subs) {
