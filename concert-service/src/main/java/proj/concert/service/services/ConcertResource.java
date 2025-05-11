@@ -494,54 +494,49 @@ public class ConcertResource {
 
 
     private void processSubscription(Concert concert, LocalDateTime date) {
-
-
         EntityManager em = PersistenceManager.instance().createEntityManager();
-        em.getTransaction().begin();
 
+        try {
+            em.getTransaction().begin();
 
-        List<Seat> seats = em.createQuery(
-                        "SELECT s FROM Seat s WHERE s.date = :date", Seat.class)
-                .setParameter("date", date).getResultList();
+            //Querying for all seats
+            List<Seat> seats = em.createQuery(
+                            "SELECT s FROM Seat s WHERE s.date = :date", Seat.class)
+                    .setParameter("date", date).getResultList();
 
-
-        List<Seat> bookedSeats = new ArrayList<>();
-        for (Seat s : seats) {
-            if(s.isBooked()) {
-                bookedSeats.add(s);
-            }
-        }
-
-
-        int currentPercentage = (int) (((double) bookedSeats.size() / seats.size()) * 100);
-        // System.out.println("blaaaaaa" +( seats.size() - bookedSeats.size()));
-        // System.out.println("Current booking %: " + currentPercentage);
-
-
-        // System.out.println("Sizeeee: " + subs.size());
-
-
-        for (ActiveSubscription sub : subs) {
-            Subscription s = sub.getSubscription();
-            // System.out.println("Threshold set by user: " + s.getPercentageBooked());
-
-
-            if (s.getConcert().getId().equals(concert.getId()) && s.getDate().equals(date) &&
-                    currentPercentage >= s.getPercentageBooked()) {
-                sub.getAsyncResponse().resume(new ConcertInfoNotificationDTO(seats.size() - bookedSeats.size()));
+            //Have all seats that are booked out in a list
+            List<Seat> bookedSeats = new ArrayList<>();
+            for (Seat s : seats) {
+                if (s.isBooked()) {
+                    bookedSeats.add(s);
+                }
             }
 
+            //calculate percentage of booked seats
+            int currentPercentage = (int) (((double) bookedSeats.size() / seats.size()) * 100);
 
+            //Testing for calculations
+            //System.out.println("Testing for calculation" +( seats.size() - bookedSeats.size()));
+            //System.out.println("Current booking %: " + currentPercentage);
+
+            //Testing the size of subs list
+            // System.out.println("Size: " + subs.size());
+
+            //Run a loop through each subscription in subs list and resume response once threshold of subscription is met
+            for (ActiveSubscription sub : subs) {
+                Subscription s = sub.getSubscription();
+                if (s.getConcert().getId().equals(concert.getId()) && s.getDate().equals(date) &&
+                        currentPercentage >= s.getPercentageBooked()) {
+                    sub.getAsyncResponse().resume(new ConcertInfoNotificationDTO(seats.size() - bookedSeats.size()));
+                }
+            }
+
+            em.getTransaction().commit();
+
+        }finally {
+            em.close();
         }
-
-
-        em.getTransaction().commit();
-        em.close();
-
 
     }
-
-
-
 
 }
