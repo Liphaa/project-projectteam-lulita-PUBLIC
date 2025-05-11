@@ -411,27 +411,29 @@ public class ConcertResource {
     @POST
     @Path("/login")
     public Response login(UserDTO creds) {
-
         EntityManager em = PersistenceManager.instance().createEntityManager();
 
         try {
+            //Query for the user
             TypedQuery<User> query = em.createQuery(
                             "SELECT u FROM User u WHERE u.username = :username AND u.password = :password", User.class)
                     .setParameter("username", creds.getUsername()).setParameter("password", creds.getPassword());
-
             User user;
+            //if no user is found with the given password and/or username, UNAUTHORIZED status is returned
             try {
                 user = query.getSingleResult();
             } catch (NoResultException e) {
                 return Response.status(Response.Status.UNAUTHORIZED).build();
             }
 
+            //If the correct password and username are provided, a token is created for that user and attach to them via AuthToken class
             String token = UUID.randomUUID().toString();
             AuthToken authToken = new AuthToken(token, user);
             em.getTransaction().begin();
             em.persist(authToken);
             em.getTransaction().commit();
 
+            //Create a cookie called "auth" and attach it to response
             NewCookie cookie = new NewCookie("auth", token);
             return Response.ok().cookie(cookie).build();
 
