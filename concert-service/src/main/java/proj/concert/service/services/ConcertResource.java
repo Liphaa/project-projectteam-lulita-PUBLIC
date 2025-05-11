@@ -240,8 +240,9 @@ public class ConcertResource {
     @GET
     @Path("/bookings/{id}")
     public Response getBookingById(@PathParam("id") long id, @CookieParam("auth") Cookie clientId){
-
         EntityManager em = PersistenceManager.instance().createEntityManager();
+
+        //return UNAUTHORIZED response when attempting to retrieve all bookings without logging in
         if (clientId == null){
             return Response.status(Response.Status.UNAUTHORIZED).build();
         }
@@ -249,6 +250,7 @@ public class ConcertResource {
         try {
             em.getTransaction().begin();
 
+            //Get the client from the token
             TypedQuery<AuthToken> tokenQuery = em.createQuery(
                             "SELECT t FROM AuthToken t WHERE t.token = :token", AuthToken.class)
                     .setParameter("token", clientId.getValue());
@@ -258,10 +260,9 @@ public class ConcertResource {
             } catch (NoResultException e) {
                 return Response.status(Response.Status.FORBIDDEN).build();
             }
-
             User user = token.getUser();
 
-
+            //Query for the booking with the given ID
             TypedQuery<Booking> bookingQuery = em.createQuery(
                     "SELECT b FROM Booking b " +
                             "JOIN FETCH b.reservedSeats " +
@@ -269,25 +270,24 @@ public class ConcertResource {
                             "JOIN FETCH b.concert " +
                             "WHERE b.id = :id", Booking.class);
             bookingQuery.setParameter("id", id);
-
-
             Booking booking;
             try {
                 booking = bookingQuery.getSingleResult();
             } catch (NoResultException e) {
                 return Response.status(Response.Status.NOT_FOUND).build();
             }
-
+            //if the user of the booking is different to the logged in user, return FORBIDDEN response
             if (booking.getUser().getId() != user.getId()) {
                 return Response.status(Response.Status.FORBIDDEN).build();
             }
 
+            //Create bookingDTO object from the booking object to return in the response
             List<Seat> seats = booking.getReservedSeats();
             List<SeatDTO> seatDTOs = new ArrayList<>();
             for (Seat seat : seats) {
                 seatDTOs.add(new SeatDTO(seat.getLabel(), seat.getPrice()));
             }
-            //System.out.println("BOOKEDDDD:" + seatDTOs);
+            //System.out.println("SEATDTOS:" + seatDTOs); - Testing for seatDTOS
             BookingDTO bookingDTO = new BookingDTO(booking.getConcert().getId(), booking.getDate(), seatDTOs);
 
             em.getTransaction().commit();
@@ -296,6 +296,7 @@ public class ConcertResource {
         } finally {
             em.close();
         }
+
     }
 
     @GET
