@@ -270,6 +270,8 @@ public class ConcertResource {
                 return Response.status(Response.Status.FORBIDDEN).build();
             }
 
+
+
             List<Seat> seats = booking.getReservedSeats();
             List<SeatDTO> seatDTOs = new ArrayList<>();
             for (Seat seat : seats) {
@@ -307,7 +309,15 @@ public class ConcertResource {
             }
 
             User user = token.getUser();
-            Set<Booking> bookings = user.getBookings();
+
+            TypedQuery<Booking> bookingQuery = em.createQuery(
+                    "SELECT DISTINCT b FROM Booking b " +
+                            "JOIN FETCH b.reservedSeats s " +
+                            "JOIN FETCH b.concert " +
+                            "WHERE b.user = :user", Booking.class);
+            bookingQuery.setParameter("user", user);
+
+            List<Booking> bookings = bookingQuery.getResultList();
 
             if (bookings == null || bookings.isEmpty()) {
                 return Response.ok(Collections.emptyList()).build();
