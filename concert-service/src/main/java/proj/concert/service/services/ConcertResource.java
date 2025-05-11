@@ -43,6 +43,7 @@ public class ConcertResource {
         try {
             Concert c = em.find(Concert.class, id);
             if (c == null) {
+                //return a 404 if concert not in database
                 responseBuilder = Response.status(Response.Status.NOT_FOUND);
             } else {
                 ConcertDTO concertDTO = concertToDto(c);
@@ -114,6 +115,7 @@ public class ConcertResource {
                 PerformerDTO performerDTO = performerToDto(p);
                 responseBuilder = Response.ok().entity(performerDTO);
             } else {
+                //return 404 if no performer found
                 responseBuilder = Response.status(Response.Status.NOT_FOUND);
             }
         }
@@ -144,6 +146,7 @@ public class ConcertResource {
     @Path("/bookings")
     public Response book(BookingRequestDTO bookingRequest, @CookieParam("auth") Cookie clientId) {
         if (clientId == null) {
+            //return 401 if unauthorised booking attempted
             return Response.status(Response.Status.UNAUTHORIZED).entity("Missing auth cookie").build();
         }
 
@@ -159,25 +162,29 @@ public class ConcertResource {
             try {
                 token = tokenQuery.getSingleResult();
             } catch (NoResultException e) {
+                // if no token, return 403 error
+
                 em.getTransaction().rollback();
                 return Response.status(Response.Status.FORBIDDEN).build();
             }
 
             User user = token.getUser();
             Concert concert = em.find(Concert.class, bookingRequest.getConcertId());
-
+            // check if the concert exists to bok
             if (concert == null) {
                 em.getTransaction().rollback();
                 return Response.status(Response.Status.BAD_REQUEST).build();
             }
 
             LocalDateTime date = bookingRequest.getDate();
+            //make sure date exists for specific booking
             if (!concert.getDates().contains(date)) {
                 em.getTransaction().rollback();
                 return Response.status(Response.Status.BAD_REQUEST).build();
             }
 
             List<Seat> reservedSeats = new ArrayList<>();
+            //to book each seat
             for (String seatLabel : bookingRequest.getSeatLabels()) {
                 TypedQuery<Seat> seatQuery = em.createQuery(
                                 "SELECT s FROM Seat s WHERE s.label = :label AND s.date = :date", Seat.class)
@@ -193,16 +200,18 @@ public class ConcertResource {
                 }
 
                 if (seat.isBooked()) {
+                    //transaction cannot go through if one of the seats have been booked
                     em.getTransaction().rollback();
                     return Response.status(Response.Status.FORBIDDEN).build();
                 }
+
 
                 seat.setBooked(true);
                 reservedSeats.add(seat);
             }
 
             Booking booking = new Booking(user, concert, date, reservedSeats);
-
+            //to associate the booked seats with the current booking
             for (Seat seat : reservedSeats) {
                 seat.setBooking(booking);
             }
