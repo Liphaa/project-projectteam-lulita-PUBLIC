@@ -261,16 +261,26 @@ public class ConcertResource {
 
             User user = token.getUser();
 
-            Booking booking = em.find(Booking.class, id);
-            if (booking == null) {
+
+            TypedQuery<Booking> bookingQuery = em.createQuery(
+                    "SELECT b FROM Booking b " +
+                            "JOIN FETCH b.reservedSeats " +
+                            "JOIN FETCH b.user " +
+                            "JOIN FETCH b.concert " +
+                            "WHERE b.id = :id", Booking.class);
+            bookingQuery.setParameter("id", id);
+
+
+            Booking booking;
+            try {
+                booking = bookingQuery.getSingleResult();
+            } catch (NoResultException e) {
                 return Response.status(Response.Status.NOT_FOUND).build();
             }
 
             if (booking.getUser().getId() != user.getId()) {
                 return Response.status(Response.Status.FORBIDDEN).build();
             }
-
-
 
             List<Seat> seats = booking.getReservedSeats();
             List<SeatDTO> seatDTOs = new ArrayList<>();
@@ -356,6 +366,7 @@ public class ConcertResource {
         dto.setPerformers(performer_list);
         return dto;
     }
+
     public static PerformerDTO performerToDto(Performer p) {
         return new PerformerDTO(p.getId(), p.getName(), p.getImageName(), p.getGenre(), p.getBlurb());
     }
