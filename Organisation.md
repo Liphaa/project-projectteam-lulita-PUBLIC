@@ -9,8 +9,6 @@ Luna was in charge of writing down group choices on:
 
 After a mutual agreement on all 3 team members, Linh implemented the domain model during the call in Java given the pseudocode given by the others as well as the discussion on how the relationship should be implemented.
 
-The final decision was that Concert had a collection of Date objects and also a many to many relationship with Performers. User is another owning class which has references to Bookings- which has a relationship with a collection of Seats, and Booking request which is a singular item as you can only make one request at a time.
-
 We designed our domain model with six entities: Concert, Seat, Performer, User, Booking, and AuthToken.
 - Concert-Performer:  
   Concert has a many-to-many relationship with Performer. This relationship is bidirectional where each Concert references a set of Performer objects, and each Performer references a set of Concert objects.
