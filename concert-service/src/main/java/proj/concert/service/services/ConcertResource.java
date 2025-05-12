@@ -43,6 +43,7 @@ public class ConcertResource {
         try {
             Concert c = em.find(Concert.class, id);
             if (c == null) {
+                //return a 404 if concert not in database
                 responseBuilder = Response.status(Response.Status.NOT_FOUND);
             } else {
                 ConcertDTO concertDTO = concertToDto(c);
@@ -58,13 +59,13 @@ public class ConcertResource {
 
     @GET
     @Path("/concerts")
-    public Response getAllConcerts() {
+    public Response getAllConcerts() { //gets all concerts regardless of id
         EntityManager em = PersistenceManager.instance().createEntityManager();
 
         try {
             TypedQuery<Concert> query = em.createQuery("select c from Concert c", Concert.class);
             List<Concert> concerts = query.getResultList();
-            List<ConcertDTO> concertDTOs = new ArrayList<>();
+            List<ConcertDTO> concertDTOs = new ArrayList<>(); //change to DTO to prevent private information to be shared
             for(Concert c : concerts) {
                 concertDTOs.add(concertToDto(c));
             }
@@ -114,6 +115,7 @@ public class ConcertResource {
                 PerformerDTO performerDTO = performerToDto(p);
                 responseBuilder = Response.ok().entity(performerDTO);
             } else {
+                //return 404 if no performer found
                 responseBuilder = Response.status(Response.Status.NOT_FOUND);
             }
         }
@@ -144,6 +146,7 @@ public class ConcertResource {
     @Path("/bookings")
     public Response book(BookingRequestDTO bookingRequest, @CookieParam("auth") Cookie clientId) {
         if (clientId == null) {
+            //return 401 if unauthorised booking attempted
             return Response.status(Response.Status.UNAUTHORIZED).entity("Missing auth cookie").build();
         }
 
@@ -159,25 +162,29 @@ public class ConcertResource {
             try {
                 token = tokenQuery.getSingleResult();
             } catch (NoResultException e) {
+                // if no token, return 403 error
+
                 em.getTransaction().rollback();
                 return Response.status(Response.Status.FORBIDDEN).build();
             }
 
             User user = token.getUser();
             Concert concert = em.find(Concert.class, bookingRequest.getConcertId());
-
+            // check if the concert exists to bok
             if (concert == null) {
                 em.getTransaction().rollback();
                 return Response.status(Response.Status.BAD_REQUEST).build();
             }
 
             LocalDateTime date = bookingRequest.getDate();
+            //make sure date exists for specific booking
             if (!concert.getDates().contains(date)) {
                 em.getTransaction().rollback();
                 return Response.status(Response.Status.BAD_REQUEST).build();
             }
 
             List<Seat> reservedSeats = new ArrayList<>();
+            //to book each seat
             for (String seatLabel : bookingRequest.getSeatLabels()) {
                 TypedQuery<Seat> seatQuery = em.createQuery(
                                 "SELECT s FROM Seat s WHERE s.label = :label AND s.date = :date", Seat.class)
@@ -193,16 +200,18 @@ public class ConcertResource {
                 }
 
                 if (seat.isBooked()) {
+                    //transaction cannot go through if one of the seats have been booked
                     em.getTransaction().rollback();
                     return Response.status(Response.Status.FORBIDDEN).build();
                 }
+
 
                 seat.setBooked(true);
                 reservedSeats.add(seat);
             }
 
             Booking booking = new Booking(user, concert, date, reservedSeats);
-
+            //to associate the booked seats with the current booking
             for (Seat seat : reservedSeats) {
                 seat.setBooking(booking);
             }
@@ -226,12 +235,6 @@ public class ConcertResource {
                     .entity(bookingDTO)
                     .build();
 
-        }catch (Exception e) {
-            e.printStackTrace(); // log or send to logger
-            if (em.getTransaction().isActive()) {
-                em.getTransaction().rollback();
-            }
-            return Response.serverError().build();
         } finally {
             em.close();
         }
@@ -240,8 +243,9 @@ public class ConcertResource {
     @GET
     @Path("/bookings/{id}")
     public Response getBookingById(@PathParam("id") long id, @CookieParam("auth") Cookie clientId){
-
         EntityManager em = PersistenceManager.instance().createEntityManager();
+
+        //return UNAUTHORIZED response when attempting to retrieve all bookings without logging in
         if (clientId == null){
             return Response.status(Response.Status.UNAUTHORIZED).build();
         }
@@ -249,6 +253,7 @@ public class ConcertResource {
         try {
             em.getTransaction().begin();
 
+            //Get the client from the token
             TypedQuery<AuthToken> tokenQuery = em.createQuery(
                             "SELECT t FROM AuthToken t WHERE t.token = :token", AuthToken.class)
                     .setParameter("token", clientId.getValue());
@@ -258,24 +263,34 @@ public class ConcertResource {
             } catch (NoResultException e) {
                 return Response.status(Response.Status.FORBIDDEN).build();
             }
-
             User user = token.getUser();
 
-            Booking booking = em.find(Booking.class, id);
-            if (booking == null) {
+            //Query for the booking with the given ID
+            TypedQuery<Booking> bookingQuery = em.createQuery(
+                    "SELECT b FROM Booking b " +
+                            "JOIN FETCH b.reservedSeats " +
+                            "JOIN FETCH b.user " +
+                            "JOIN FETCH b.concert " +
+                            "WHERE b.id = :id", Booking.class);
+            bookingQuery.setParameter("id", id);
+            Booking booking;
+            try {
+                booking = bookingQuery.getSingleResult();
+            } catch (NoResultException e) {
                 return Response.status(Response.Status.NOT_FOUND).build();
             }
-
+            //if the user of the booking is different to the logged in user, return FORBIDDEN response
             if (booking.getUser().getId() != user.getId()) {
                 return Response.status(Response.Status.FORBIDDEN).build();
             }
 
+            //Create bookingDTO object from the booking object to return in the response
             List<Seat> seats = booking.getReservedSeats();
             List<SeatDTO> seatDTOs = new ArrayList<>();
             for (Seat seat : seats) {
                 seatDTOs.add(new SeatDTO(seat.getLabel(), seat.getPrice()));
             }
-            //System.out.println("BOOKEDDDD:" + seatDTOs);
+            //System.out.println("SEATDTOS:" + seatDTOs); - Testing for seatDTOS
             BookingDTO bookingDTO = new BookingDTO(booking.getConcert().getId(), booking.getDate(), seatDTOs);
 
             em.getTransaction().commit();
@@ -284,18 +299,23 @@ public class ConcertResource {
         } finally {
             em.close();
         }
+
     }
 
     @GET
     @Path("/bookings")
     public Response getAllBookings(@CookieParam("auth") Cookie clientId) {
         EntityManager em = PersistenceManager.instance().createEntityManager();
+
+        //return UNAUTHORIZED response when attempting to retrieve all bookings without logging in
         if (clientId == null){
             return Response.status(Response.Status.UNAUTHORIZED).build();
         }
 
         try {
             em.getTransaction().begin();
+
+            //Get the client from the token
             TypedQuery<AuthToken> tokenQuery = em.createQuery(
                             "SELECT t FROM AuthToken t WHERE t.token = :token", AuthToken.class)
                     .setParameter("token", clientId.getValue());
@@ -305,12 +325,22 @@ public class ConcertResource {
             } catch (NoResultException e) {
                 return Response.status(Response.Status.UNAUTHORIZED).build();
             }
-
             User user = token.getUser();
-            Set<Booking> bookings = user.getBookings();
+
+            //Query for all bookings of the user found from the token, join fetch for some attributes of booking to solve n+1 problem
+            TypedQuery<Booking> bookingQuery = em.createQuery(
+                    "SELECT DISTINCT b FROM Booking b " +
+                            "JOIN FETCH b.reservedSeats s " +
+                            "JOIN FETCH b.concert " +
+                            "WHERE b.user = :user", Booking.class);
+            bookingQuery.setParameter("user", user);
+            List<Booking> bookings = bookingQuery.getResultList();
+            //if no booking is found, return an empty list
             if (bookings == null || bookings.isEmpty()) {
                 return Response.ok(Collections.emptyList()).build();
             }
+
+            //Creating a list of bookingDTO objects from the list of booking objects to return in the response
             List<BookingDTO> bookingDTOs = new ArrayList<>();
             List<Seat> seats;
             List<SeatDTO> seatDTOs;
@@ -323,8 +353,8 @@ public class ConcertResource {
                 BookingDTO bookingDTO = new BookingDTO(booking.getConcert().getId(), booking.getDate(), seatDTOs);
                 bookingDTOs.add(bookingDTO);
             }
-            em.getTransaction().commit();
 
+            em.getTransaction().commit();
             return Response.ok(bookingDTOs).build();
 
         } finally {
@@ -345,6 +375,7 @@ public class ConcertResource {
         dto.setPerformers(performer_list);
         return dto;
     }
+
     public static PerformerDTO performerToDto(Performer p) {
         return new PerformerDTO(p.getId(), p.getName(), p.getImageName(), p.getGenre(), p.getBlurb());
     }
@@ -361,7 +392,7 @@ public class ConcertResource {
 
         try {
             LocalDateTime date = LocalDateTime.parse(dateStr);
-            if (stat == BookingStatus.Booked) {
+            if (stat == BookingStatus.Booked) { //changes query based on what kind of seat we want to retrieve from the system
                 query = em.createQuery("select s from Seat s where s.date = :date and s.isBooked = true", Seat.class);
             } else if (stat == BookingStatus.Unbooked) {
                 query = em.createQuery("select s from Seat s where s.date = :date and s.isBooked = false", Seat.class);
@@ -389,27 +420,29 @@ public class ConcertResource {
     @POST
     @Path("/login")
     public Response login(UserDTO creds) {
-
         EntityManager em = PersistenceManager.instance().createEntityManager();
 
         try {
+            //Query for the user
             TypedQuery<User> query = em.createQuery(
                             "SELECT u FROM User u WHERE u.username = :username AND u.password = :password", User.class)
                     .setParameter("username", creds.getUsername()).setParameter("password", creds.getPassword());
-
             User user;
+            //if no user is found with the given password and/or username, UNAUTHORIZED status is returned
             try {
                 user = query.getSingleResult();
             } catch (NoResultException e) {
                 return Response.status(Response.Status.UNAUTHORIZED).build();
             }
 
+            //If the correct password and username are provided, a token is created for that user and attach to them via AuthToken class
             String token = UUID.randomUUID().toString();
             AuthToken authToken = new AuthToken(token, user);
             em.getTransaction().begin();
             em.persist(authToken);
             em.getTransaction().commit();
 
+            //Create a cookie called "auth" and attach it to response
             NewCookie cookie = new NewCookie("auth", token);
             return Response.ok().cookie(cookie).build();
 
@@ -422,7 +455,7 @@ public class ConcertResource {
     @POST
     @Path("/subscribe/concertInfo")
     public void subscribeConcertInfo(@Suspended AsyncResponse sub, @CookieParam("auth") Cookie clientId, ConcertInfoSubscriptionDTO subscriptionDTO) {
-        if (clientId == null) {
+        if (clientId == null) { //checks client id exists
             sub.resume(Response.status(Response.Status.UNAUTHORIZED).entity("Missing auth cookie").build());
             return;
         }
@@ -433,18 +466,18 @@ public class ConcertResource {
             Concert concert;
 
             concert = em.find(Concert.class, subscriptionDTO.getConcertId());
-            if (concert == null) {
+            if (concert == null) { //concert doesnt exist
                 sub.resume(Response.status(Response.Status.BAD_REQUEST).build());
                 return;
             }
 
             Set<LocalDateTime> dates = concert.getDates();
-            if (!dates.contains(subscriptionDTO.getDate())) {
+            if (!dates.contains(subscriptionDTO.getDate())) { //date doesn't belong to concert/date doesnt exist
                 sub.resume(Response.status(Response.Status.BAD_REQUEST).build());
                 return;
             }
 
-            TypedQuery<AuthToken> tokenQuery = em.createQuery(
+            TypedQuery<AuthToken> tokenQuery = em.createQuery( //checks if client id is authorized
                             "SELECT t FROM AuthToken t WHERE t.token = :token", AuthToken.class)
                     .setParameter("token", clientId.getValue());
 
@@ -458,7 +491,7 @@ public class ConcertResource {
 
 
             User user = token.getUser();
-            Subscription subscription = new Subscription(user, concert, subscriptionDTO.getDate(), subscriptionDTO.getPercentageBooked());
+            Subscription subscription = new Subscription(user, concert, subscriptionDTO.getDate(), subscriptionDTO.getPercentageBooked()); //creates new subscription object from DTO and adds to subscription
 
 
             em.persist(subscription);
@@ -472,54 +505,49 @@ public class ConcertResource {
 
 
     private void processSubscription(Concert concert, LocalDateTime date) {
-
-
         EntityManager em = PersistenceManager.instance().createEntityManager();
-        em.getTransaction().begin();
 
+        try {
+            em.getTransaction().begin();
 
-        List<Seat> seats = em.createQuery(
-                        "SELECT s FROM Seat s WHERE s.date = :date", Seat.class)
-                .setParameter("date", date).getResultList();
+            //Querying for all seats
+            List<Seat> seats = em.createQuery(
+                            "SELECT s FROM Seat s WHERE s.date = :date", Seat.class)
+                    .setParameter("date", date).getResultList();
 
-
-        List<Seat> bookedSeats = new ArrayList<>();
-        for (Seat s : seats) {
-            if(s.isBooked()) {
-                bookedSeats.add(s);
-            }
-        }
-
-
-        int currentPercentage = (int) (((double) bookedSeats.size() / seats.size()) * 100);
-        // System.out.println("blaaaaaa" +( seats.size() - bookedSeats.size()));
-        // System.out.println("Current booking %: " + currentPercentage);
-
-
-        // System.out.println("Sizeeee: " + subs.size());
-
-
-        for (ActiveSubscription sub : subs) {
-            Subscription s = sub.getSubscription();
-            // System.out.println("Threshold set by user: " + s.getPercentageBooked());
-
-
-            if (s.getConcert().getId().equals(concert.getId()) && s.getDate().equals(date) &&
-                    currentPercentage >= s.getPercentageBooked()) {
-                sub.getAsyncResponse().resume(new ConcertInfoNotificationDTO(seats.size() - bookedSeats.size()));
+            //Have all seats that are booked out in a list
+            List<Seat> bookedSeats = new ArrayList<>();
+            for (Seat s : seats) {
+                if (s.isBooked()) {
+                    bookedSeats.add(s);
+                }
             }
 
+            //calculate percentage of booked seats = number of bookedSeats divided by total number of seats
+            int currentPercentage = (int) (((double) bookedSeats.size() / seats.size()) * 100);
 
+            //Testing for calculations
+            //System.out.println("Testing for calculation" +( seats.size() - bookedSeats.size()));
+            //System.out.println("Current booking %: " + currentPercentage);
+
+            //Testing the size of subs list
+            //System.out.println("Size: " + subs.size());
+
+            //Run a loop through each subscription in subs list and resume response once threshold of subscription is met
+            for (ActiveSubscription sub : subs) {
+                Subscription s = sub.getSubscription();
+                if (s.getConcert().getId().equals(concert.getId()) && s.getDate().equals(date) &&
+                        currentPercentage >= s.getPercentageBooked()) {
+                    sub.getAsyncResponse().resume(new ConcertInfoNotificationDTO(seats.size() - bookedSeats.size()));
+                }
+            }
+
+            em.getTransaction().commit();
+
+        }finally {
+            em.close();
         }
-
-
-        em.getTransaction().commit();
-        em.close();
-
 
     }
-
-
-
 
 }

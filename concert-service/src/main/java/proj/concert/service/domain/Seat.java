@@ -24,7 +24,7 @@ public class Seat{
 	@JsonDeserialize(using = LocalDateTimeDeserializer.class)
 	private LocalDateTime date;
 
-	@ManyToOne
+	@ManyToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = "booking_id")
 	private Booking booking;
 

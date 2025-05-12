@@ -25,7 +25,7 @@ public class Concert implements Comparable<Concert>{
     @Column(length = 1000)
     private String blurb;
 
-    @ElementCollection(fetch = FetchType.EAGER)
+    @ElementCollection
     @CollectionTable(
             name = "CONCERT_DATES",
             joinColumns = @JoinColumn(name = "CONCERT_ID"))
