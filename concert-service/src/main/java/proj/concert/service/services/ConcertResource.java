@@ -235,12 +235,6 @@ public class ConcertResource {
                     .entity(bookingDTO)
                     .build();
 
-        }catch (Exception e) {
-            e.printStackTrace(); // log or send to logger
-            if (em.getTransaction().isActive()) {
-                em.getTransaction().rollback();
-            }
-            return Response.serverError().build();
         } finally {
             em.close();
         }
