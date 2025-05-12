@@ -59,13 +59,13 @@ public class ConcertResource {
 
     @GET
     @Path("/concerts")
-    public Response getAllConcerts() {
+    public Response getAllConcerts() { //gets all concerts regardless of id
         EntityManager em = PersistenceManager.instance().createEntityManager();
 
         try {
             TypedQuery<Concert> query = em.createQuery("select c from Concert c", Concert.class);
             List<Concert> concerts = query.getResultList();
-            List<ConcertDTO> concertDTOs = new ArrayList<>();
+            List<ConcertDTO> concertDTOs = new ArrayList<>(); //change to DTO to prevent private information to be shared
             for(Concert c : concerts) {
                 concertDTOs.add(concertToDto(c));
             }
@@ -398,7 +398,7 @@ public class ConcertResource {
 
         try {
             LocalDateTime date = LocalDateTime.parse(dateStr);
-            if (stat == BookingStatus.Booked) {
+            if (stat == BookingStatus.Booked) { //changes query based on what kind of seat we want to retrieve from the system
                 query = em.createQuery("select s from Seat s where s.date = :date and s.isBooked = true", Seat.class);
             } else if (stat == BookingStatus.Unbooked) {
                 query = em.createQuery("select s from Seat s where s.date = :date and s.isBooked = false", Seat.class);
@@ -461,7 +461,7 @@ public class ConcertResource {
     @POST
     @Path("/subscribe/concertInfo")
     public void subscribeConcertInfo(@Suspended AsyncResponse sub, @CookieParam("auth") Cookie clientId, ConcertInfoSubscriptionDTO subscriptionDTO) {
-        if (clientId == null) {
+        if (clientId == null) { //checks client id exists
             sub.resume(Response.status(Response.Status.UNAUTHORIZED).entity("Missing auth cookie").build());
             return;
         }
@@ -472,18 +472,18 @@ public class ConcertResource {
             Concert concert;
 
             concert = em.find(Concert.class, subscriptionDTO.getConcertId());
-            if (concert == null) {
+            if (concert == null) { //concert doesnt exist
                 sub.resume(Response.status(Response.Status.BAD_REQUEST).build());
                 return;
             }
 
             Set<LocalDateTime> dates = concert.getDates();
-            if (!dates.contains(subscriptionDTO.getDate())) {
+            if (!dates.contains(subscriptionDTO.getDate())) { //date doesn't belong to concert/date doesnt exist
                 sub.resume(Response.status(Response.Status.BAD_REQUEST).build());
                 return;
             }
 
-            TypedQuery<AuthToken> tokenQuery = em.createQuery(
+            TypedQuery<AuthToken> tokenQuery = em.createQuery( //checks if client id is authorized
                             "SELECT t FROM AuthToken t WHERE t.token = :token", AuthToken.class)
                     .setParameter("token", clientId.getValue());
 
@@ -497,7 +497,7 @@ public class ConcertResource {
 
 
             User user = token.getUser();
-            Subscription subscription = new Subscription(user, concert, subscriptionDTO.getDate(), subscriptionDTO.getPercentageBooked());
+            Subscription subscription = new Subscription(user, concert, subscriptionDTO.getDate(), subscriptionDTO.getPercentageBooked()); //creates new subscription object from DTO and adds to subscription
 
 
             em.persist(subscription);
